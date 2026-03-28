@@ -11,8 +11,6 @@ const statusText = document.getElementById('status');
 let mediaRecorder;
 let recordedChunks = [];
 let audioBlob;
-let recognition;
-let transcriptWhileRecording = '';
 
 const speechRecognitionClass = window.SpeechRecognition || window.webkitSpeechRecognition;
 
@@ -28,14 +26,13 @@ if (!speechRecognitionClass) {
 
 recordBtn.addEventListener('click', startRecording);
 stopBtn.addEventListener('click', stopRecording);
-transcribeBtn.addEventListener('click', transcribeLiveSpeech);
+transcribeBtn.addEventListener('click', transcribeAudio);
 buildListBtn.addEventListener('click', () => createTodoItems(transcriptBox.value));
 
 async function startRecording() {
   try {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     recordedChunks = [];
-    transcriptWhileRecording = '';
     mediaRecorder = new MediaRecorder(stream);
 
     mediaRecorder.addEventListener('dataavailable', (event) => {
@@ -50,23 +47,12 @@ async function startRecording() {
       player.src = audioUrl;
       downloadLink.href = audioUrl;
       downloadLink.hidden = false;
-
-      if (transcriptWhileRecording.trim()) {
-        transcriptBox.value = transcriptWhileRecording.trim();
-        createTodoItems(transcriptWhileRecording);
-        setStatus('Recording and transcript are ready.');
-      } else {
-        setStatus('Recording ready. Click “Transcribe live speech” and speak clearly.');
-      }
-
-      stopRecognition();
       transcribeBtn.disabled = !speechRecognitionClass;
+      setStatus('Recording ready. Click “Transcribe from recording” to convert speech into tasks.');
       stream.getTracks().forEach((track) => track.stop());
     });
 
     mediaRecorder.start();
-    startRecognitionDuringRecording();
-
     recordBtn.disabled = true;
     stopBtn.disabled = false;
     transcribeBtn.disabled = true;
@@ -84,77 +70,31 @@ function stopRecording() {
   }
 }
 
-function startRecognitionDuringRecording() {
-  if (!speechRecognitionClass) {
-    return;
-  }
-
-  recognition = new speechRecognitionClass();
-  recognition.lang = 'en-US';
-  recognition.continuous = true;
-  recognition.interimResults = true;
-
-  recognition.onresult = (event) => {
-    let combined = '';
-    for (let i = 0; i < event.results.length; i += 1) {
-      combined += `${event.results[i][0].transcript} `;
-    }
-
-    transcriptWhileRecording = combined.trim();
-    transcriptBox.value = transcriptWhileRecording;
-  };
-
-  recognition.onerror = (event) => {
-    if (event.error === 'no-speech') {
-      setStatus('No speech detected while recording. Make sure your mic is close and try again.');
-      return;
-    }
-
-    setStatus(`Speech recognition issue: ${event.error}. You can still type tasks manually.`);
-  };
-
-  recognition.start();
-}
-
-function transcribeLiveSpeech() {
+function transcribeAudio() {
   if (!speechRecognitionClass) {
     setStatus('Speech recognition is unsupported in this browser.');
     return;
   }
 
-  const oneShotRecognition = new speechRecognitionClass();
-  oneShotRecognition.lang = 'en-US';
-  oneShotRecognition.continuous = false;
-  oneShotRecognition.interimResults = false;
+  const recognition = new speechRecognitionClass();
+  recognition.lang = 'en-US';
+  recognition.continuous = false;
+  recognition.interimResults = false;
 
-  setStatus('Listening… speak your tasks now.');
+  setStatus('Listening for task speech…');
 
-  oneShotRecognition.onresult = (event) => {
+  recognition.onresult = (event) => {
     const spokenText = event.results[0][0].transcript;
     transcriptBox.value = spokenText;
     setStatus('Transcript created. Now build your to-do list.');
     createTodoItems(spokenText);
   };
 
-  oneShotRecognition.onerror = (event) => {
-    if (event.error === 'no-speech') {
-      setStatus('No speech detected. Click again, then start speaking right away.');
-      return;
-    }
-
+  recognition.onerror = (event) => {
     setStatus(`Transcription failed: ${event.error}. You can type tasks manually.`);
   };
 
-  oneShotRecognition.start();
-}
-
-function stopRecognition() {
-  if (recognition) {
-    recognition.onresult = null;
-    recognition.onerror = null;
-    recognition.stop();
-    recognition = null;
-  }
+  recognition.start();
 }
 
 function createTodoItems(text) {
