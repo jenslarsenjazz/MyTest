@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Voice-Powered Daily To-Do</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="app">
+      <h1>🎙️ Voice-Powered Daily Planner</h1>
+      <p class="intro">
+        Record your voice and say your tasks (example: “Email Sam, finish report, and go for a walk”).
+      </p>
+
+      <section class="panel controls" aria-label="Recording controls">
+        <button id="recordBtn" class="primary">Start recording</button>
+        <button id="stopBtn" disabled>Stop recording</button>
+        <button id="transcribeBtn" disabled>Transcribe from recording</button>
+      </section>
+
+      <section class="panel" aria-label="Recordings">
+        <h2>Your recording</h2>
+        <audio id="player" controls></audio>
+        <a id="downloadLink" href="#" download="daily-tasks.webm" hidden>Download recording</a>
+      </section>
+
+      <section class="panel" aria-label="Transcript">
+        <h2>Transcript</h2>
+        <p id="status" role="status" aria-live="polite">Idle</p>
+        <textarea id="transcript" rows="5" placeholder="Your transcribed tasks will appear here..."></textarea>
+        <button id="buildListBtn">Build to-do list</button>
+      </section>
+
+      <section class="panel" aria-label="Task list">
+        <h2>Today’s to-do list</h2>
+        <ul id="todoList"></ul>
+      </section>
+    </main>
+
+    <script src="script.js"></script>
+  </body>
+</html>
